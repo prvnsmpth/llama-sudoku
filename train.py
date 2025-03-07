@@ -17,7 +17,7 @@ print("MERGED_DIR:", MERGED_DIR)
 
 PatchFastRL("GRPO", FastLanguageModel)
 
-max_seq_length = 4096
+max_seq_length = 2048
 lora_rank = 64
 
 def train_grpo():
@@ -229,9 +229,9 @@ def train_grpo():
         gradient_accumulation_steps = 1, # Increase to 4 for smoother training
         num_generations = 6, # Decrease if out of memory
         max_prompt_length = 256,
-        max_completion_length = 4096,
+        max_completion_length = 2048,
         num_train_epochs = 5, # Set to 1 for a full training run
-        max_steps = 1500,
+        max_steps = 3000,
         save_steps = 250,
         max_grad_norm = 0.1,
         report_to = "wandb", # Can use Weights & Biases
