@@ -9,7 +9,6 @@ DATA_FILE = os.environ.get('DATA_FILE', 'data/dataset.json')
 OUTPUT_DIR = os.environ.get('OUTPUT_DIR', 'output')
 LORA_DIR = os.environ.get('LORA_DIR', 'lora')
 MERGED_DIR = os.environ.get('MERGED_DIR', 'merged')
-
 print("DATA_FILE:", DATA_FILE)
 print("OUTPUT_DIR:", OUTPUT_DIR)
 print("LORA_DIR:", LORA_DIR)
@@ -72,7 +71,7 @@ def train_grpo():
             'answer': f'{solution}'
         }
 
-    dataset = load_dataset('json', data_files='dataset.jsonl', split='train')
+    dataset = load_dataset('json', data_files=DATA_FILE, split='train')
     dataset = dataset.map(lambda x: dataset_formatter(x))
 
     def parse_grid(grid_str) -> list[list[str]]:
@@ -80,13 +79,19 @@ def train_grpo():
         +---+---+---+---+
         | 3 | 1 | 2 | 4 |
         +---+---+---+---+
-        | 4 | 2 | 3 | 1 |
+        | 4 | . | 3 | 1 |
         +---+---+---+---+
-        | 2 | 4 | 1 | 3 |
+        | 2 | . | 1 | . |
         +---+---+---+---+
         | 1 | 3 | 4 | 2 |
         +---+---+---+---+
         """
+        if not grid_str:
+            return None
+        
+        if not is_well_formatted_grid(grid_str):
+            return None
+
         grid = []
         for line in grid_str.strip().split('\n'):
             if line.startswith('+'):
@@ -101,28 +106,27 @@ def train_grpo():
 
         return grid
 
-    def is_well_formatted_grid(grid_str, strict=True) -> bool:
+    def is_well_formatted_grid(grid_str) -> bool:
         """Check if the grid is well formatted, including the borders and the digits."""
         lines = grid_str.strip().split('\n')
+        digit_line_pattern = re.compile(r'\| [1-4.] \| [1-4.] \| [1-4.] \| [1-4.] \|')
         if len(lines) != 9:
             return False
-        for line in lines:
+        for idx, line in enumerate(lines):
+            line = line.strip()
             if len(line) != 17:
                 return False
-            if line.startswith('+'):
+            
+            if idx % 2 == 0:
                 if line != '+---+---+---+---+':
                     return False
             else:
-                line = line.replace(' ', '')
-                parts = line.split('|')
-                if len(parts) != 6:
+                if not digit_line_pattern.match(line):
                     return False
-                for part in parts[1:-1]:
-                    if not part.isdigit():
-                        return False
-        return True
 
     def extract_xml_answer(text: str) -> str:
+        if '<answer>' not in text or '</answer>' not in text:
+            return None
         answer = text.split("<answer>")[-1]
         answer = answer.split("</answer>")[0]
         return answer.strip()
@@ -138,31 +142,17 @@ def train_grpo():
 
     def score_answer(solution: list[list[str]], response: list[list[str]]) -> float:
         if response is None:
-            return -1.0
-        num_matches = -6 # There are 6 pre-filled cells in the puzzle
+            return 0.0
+        num_matches = 0
         for i in range(4):
             for j in range(4):
                 if solution[i][j] == response[i][j]:
                     num_matches += 1
-        return num_matches / 10.0
-
-    # TBD
-    def score_grid_format(grid_str: str) -> float:
-        if parse_grid(grid_str) is not None:
-            return 0.5
-        
-        score = 0.0
-        for line in grid_str.strip().split('\n'):
-            line = line.strip()
-            if line.startswith('+'):
-                continue
-            num_digits = len([c for c in line if c.isdigit()])
-            num_blanks = len([c for c in line if c == '.'])
-            score += (num_digits - num_blanks)
+        num_correct = max(0, num_matches - 8) # Subtract the number of clues
+        return num_correct / 8.0
 
     def partial_correctness_reward_func(prompts, completions, answer, **kwargs) -> list[float]:
         responses = [completion[0]['content'] for completion in completions]
-        q = prompts[0][-1]['content']
         answers = [parse_grid(a) for a in answer]
         extracted_responses = [parse_grid(extract_xml_answer(r)) for r in responses]
         reward = [score_answer(a, r) for r, a in zip(extracted_responses, answers)]

@@ -119,12 +119,12 @@ def generate():
     attempts = 0
     # Try generating candidate puzzles until one has a unique solution.
     while True:
-        candidate = generate_candidate_puzzle(full_grid, clue_count=6)
+        candidate = generate_candidate_puzzle(full_grid, clue_count=8)
         # Use a deep copy to avoid accidental modifications during solving.
         sol_count = count_solutions(copy.deepcopy(candidate), limit=2)
         attempts += 1
         if sol_count == 1:
-            print(f"Found a unique 6-clue puzzle after {attempts} attempts:")
+            print(f"Found a unique 8-clue puzzle after {attempts} attempts:")
             puzzle = io.StringIO()
             print_grid(candidate, out=puzzle)
             return [solution.getvalue(), puzzle.getvalue()]

@@ -1,6 +1,5 @@
 import modal
 from pathlib import Path
-from train import train_grpo
 
 app = modal.App('llama-sudoku')
 volume = modal.Volume.from_name('llama-sudoku-volume', create_if_missing=True)
@@ -31,22 +30,22 @@ image = (
         ])
         .env({
             'DATA_FILE': 'data/dataset.json',
-            'OUTPUT_DIR': OUTPUT_DIR,
-            'LORA_DIR': LORA_DIR,
-            'MERGED_DIR': MERGED_DIR,
+            'OUTPUT_DIR': str(OUTPUT_DIR),
+            'LORA_DIR': str(LORA_DIR),
+            'MERGED_DIR': str(MERGED_DIR),
         })
 )
 
 @app.function(gpu='H100', image=image, volumes={ VOLUME_MNT_PATH: volume }, timeout=86_400)
 def train():
     print("[Remote] Starting training...")
-    import os
-    print("[Remote] CWD:", os.getcwd())
+    from train import train_grpo
     train_grpo()
 
 @app.local_entrypoint()
 def main():
-    print("[Local] The result is:", train.remote())
+    print("[Local] Starting training...")
+    train.remote()
 
 
 
