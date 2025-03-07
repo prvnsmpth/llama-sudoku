@@ -15,9 +15,9 @@ operating_sys = "ubuntu22.04"
 tag = f"{cuda_version}-{flavor}-{operating_sys}"
 
 image = (
-    modal.Image.from_registry(f"nvidia/cuda:{tag}", add_python="3.9")
+    modal.Image.from_registry(f"nvidia/cuda:{tag}", add_python="3.10")
         .apt_install("git")
-        .run_commands("git clone https://github.com/prvnsmpth/llama-sudoku.git && echo 'Repo cloned.'", force_build=True)
+        .run_commands("git clone https://github.com/prvnsmpth/llama-sudoku.git && echo 'Repo cloned.'")
         .pip_install([
             "unsloth",
             "vllm",

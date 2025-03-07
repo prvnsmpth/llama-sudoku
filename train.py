@@ -122,6 +122,7 @@ def train_grpo():
             else:
                 if not digit_line_pattern.match(line):
                     return False
+        return True
 
     def extract_xml_answer(text: str) -> str:
         if '<answer>' not in text or '</answer>' not in text:
