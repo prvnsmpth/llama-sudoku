@@ -93,6 +93,7 @@ def train_grpo():
 
         grid = []
         for line in grid_str.strip().split('\n'):
+            line = line.strip()
             if line.startswith('+'):
                 continue
             grid.append([c for c in line if c.isdigit() or c == '.'])
@@ -105,22 +106,30 @@ def train_grpo():
 
         return grid
 
-    def is_well_formatted_grid(grid_str) -> bool:
+    def is_well_formatted_grid(grid_str, debug=False) -> bool:
         """Check if the grid is well formatted, including the borders and the digits."""
         lines = grid_str.strip().split('\n')
         digit_line_pattern = re.compile(r'\| [1-4.] \| [1-4.] \| [1-4.] \| [1-4.] \|')
         if len(lines) != 9:
+            if debug:
+                print(f"Expected 9 lines, got {len(lines)}")
             return False
         for idx, line in enumerate(lines):
             line = line.strip()
             if len(line) != 17:
+                if debug:
+                    print(f"Line {idx} has length {len(line)}, expected 17")
                 return False
             
             if idx % 2 == 0:
                 if line != '+---+---+---+---+':
+                    if debug:
+                        print(f"Line {idx} is not a border line: {line}")
                     return False
             else:
                 if not digit_line_pattern.match(line):
+                    if debug:
+                        print(f"Line {idx} is not a digit line: {line}")
                     return False
         return True
 
@@ -136,7 +145,7 @@ def train_grpo():
         q = prompts[0][-1]['content']
         answers = [parse_grid(a) for a in answer]
         extracted_responses = [parse_grid(extract_xml_answer(r)) for r in responses]
-        reward = [2.0 if r == a else 0.0 for r, a in zip(extracted_responses, answers)]
+        reward = [2.0 if r is not None and r == a else 0.0 for r, a in zip(extracted_responses, answers)]
         print(f'correctness_reward_func: {reward[0]}')
         return reward
 
@@ -209,6 +218,7 @@ def train_grpo():
         print('Num completions:', len(completions))
         print('Num responses:', len(responses))
         print(f"(Sample) Question:\n{q}", f"\nAnswer:\n{answer[0]}", f"\nResponse:\n{responses[0]}", f"\nExtracted:\n{extracted_responses[0]}")
+        print(f"Is well formatted: {is_well_formatted_grid(answer[0])}")
         reward = [count_xml(c) for c in responses]
         print(f"xmlcount_reward_func: {reward[0]}")
         return reward
