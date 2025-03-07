@@ -9,6 +9,11 @@ OUTPUT_DIR = Path(VOLUME_MNT_PATH, 'llama-sudoku', f"output_{TAG}")
 LORA_DIR = Path(VOLUME_MNT_PATH, 'llama-sudoku', f"lora_{TAG}")
 MERGED_DIR = Path(VOLUME_MNT_PATH, 'llama-sudoku', f"merged_{TAG}")
 
+hf_cache_vol = modal.Volume.from_name(
+    "huggingface-cache", create_if_missing=True
+)
+vllm_cache_vol = modal.Volume.from_name("vllm-cache", create_if_missing=True)
+
 cuda_version = "12.4.0"  # should be no greater than host CUDA version
 flavor = "devel"  #  includes full CUDA toolkit
 operating_sys = "ubuntu22.04"
@@ -17,7 +22,7 @@ tag = f"{cuda_version}-{flavor}-{operating_sys}"
 image = (
     modal.Image.from_registry(f"nvidia/cuda:{tag}", add_python="3.10")
         .apt_install("git")
-        .run_commands("git clone https://github.com/prvnsmpth/llama-sudoku.git && echo 'Repo cloned.'")
+        .run_commands("git clone https://github.com/prvnsmpth/llama-sudoku.git && echo 'Repo cloned.'", force_build=True)
         .pip_install([
             "unsloth",
             "vllm",
@@ -37,7 +42,16 @@ image = (
         })
 )
 
-@app.function(gpu='H100', image=image, volumes={ VOLUME_MNT_PATH: volume }, timeout=86_400)
+@app.function(
+    gpu='H100', 
+    image=image, 
+    volumes={ 
+        VOLUME_MNT_PATH: volume,
+        '/root/.cache/huggingface': hf_cache_vol,
+        '/root/.cache/vllm': vllm_cache_vol
+    }, 
+    timeout=86_400
+)
 def train():
     print("[Remote] Starting training...")
     from train import train_grpo

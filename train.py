@@ -218,7 +218,7 @@ def train_grpo():
         print('Num completions:', len(completions))
         print('Num responses:', len(responses))
         print(f"(Sample) Question:\n{q}", f"\nAnswer:\n{answer[0]}", f"\nResponse:\n{responses[0]}", f"\nExtracted:\n{extracted_responses[0]}")
-        print(f"Is well formatted: {is_well_formatted_grid(answer[0])}")
+        print(f"Is well formatted: {is_well_formatted_grid(answer[0], debug=True)}")
         reward = [count_xml(c) for c in responses]
         print(f"xmlcount_reward_func: {reward[0]}")
         return reward
