@@ -4,6 +4,7 @@ from unsloth import FastLanguageModel, PatchFastRL
 from trl import GRPOConfig, GRPOTrainer
 from unsloth import is_bfloat16_supported
 import os
+import textwrap
 
 DATA_FILE = os.environ.get('DATA_FILE', 'data/dataset.json')
 OUTPUT_DIR = os.environ.get('OUTPUT_DIR', 'output')
@@ -42,23 +43,21 @@ def train_grpo():
     )
 
     # Load and prep dataset
-    SYSTEM_PROMPT = """
-    Your task is to solve the given 4x4 Sudoku puzzle. Given a puzzle, you will
-    think step-by-step, and fill in the numbers in the grid.
-
-    Respond in the following format:
-    ```
-    <think>
-    ...
-    </think>
-    <answer>
-    ...
-    </answer>
-    ```
-
-    In the <think> tag, you should explain your reasoning.
-    In the <answer> tag, you should only provide the well-formatted grid, as shown in the puzzle.
-    """
+    SYSTEM_PROMPT = textwrap.dedent("""
+        Your task is to solve the given 4x4 Sudoku puzzle. Given a puzzle, you will
+        think step-by-step, and fill in the numbers in the grid.
+        Respond in the following format:
+        ```
+        <think>
+        ...
+        </think>
+        <answer>
+        ...
+        </answer>
+        ```
+        In the <think> tag, you should explain your step-by-step reasoning.
+        In the <answer> tag, you should only provide the well-formatted grid, just like the puzzle below.
+    """)
 
     def dataset_formatter(example):
         puzzle = example['puzzle']
@@ -66,7 +65,7 @@ def train_grpo():
         return {
             'prompt': [
                 { 'role': 'system', 'content': SYSTEM_PROMPT },
-                { 'role': 'user', 'content': f'Solve this:\n{puzzle}' },
+                { 'role': 'user', 'content': f'Think step-by-step and solve this:\n{puzzle}' },
             ],
             'answer': f'{solution}'
         }

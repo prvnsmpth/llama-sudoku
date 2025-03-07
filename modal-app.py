@@ -21,6 +21,7 @@ image = (
         .pip_install([
             "unsloth",
             "vllm",
+            "wandb"
         ])
         .workdir("llama-sudoku")
         .run_commands([
